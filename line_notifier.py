@@ -21,28 +21,30 @@ def load_config():
 
 def format_line_report(watchlist_results, ipo_list, market_indices=None, performance=None):
     """
-    検証済み正規データ・独立リスクリワード比・執行トリガー・実績勝率付き最高峰レポート
+    専門用語ゼロ！直感的に一目でわかるシンプル投資レポート
+    「いくら・どれくらい動いた・なぜ・買うべきか待つべきか」
     """
     jst = timezone(timedelta(hours=9))
     today_str = datetime.now(jst).strftime("%Y/%m/%d %H:%M")
 
     lines = [
-        f"📊【AI株式投資レポート】",
-        f"🕒 配信時刻: {today_str} (JST)",
+        f"📊【AI株式 投資サマリー】",
+        f"🕒 {today_str}",
         "===================="
     ]
 
-    # 1. 主要マクロ市況サマリー
+    # 1. 全体の空気感（ざっくり）
     if market_indices:
-        lines.append("🌐【主要市況サマリー】")
+        lines.append("🌐【今の全体の空気感】")
         for idx in market_indices:
-            sign = "+" if idx["pct_change"] > 0 else ""
-            status_tag = "🇯🇵本日" if "東証" in idx.get("status", "") else "🇺🇸前日終値"
-            lines.append(f"・{idx['name']}: {idx['price']:,}{idx['unit']} ({sign}{idx['pct_change']:.2f}%) [{status_tag}]")
+            pct = idx["pct_change"]
+            trend = "大幅上昇 🟢" if pct >= 1.5 else "小幅高 🟢" if pct > 0 else "大幅下落 🔴" if pct <= -1.5 else "小幅安 🔴" if pct < 0 else "横ばい ⚪"
+            sign = "+" if pct > 0 else ""
+            lines.append(f"・{idx['name']}: {idx['price']:,}{idx['unit']} ({sign}{pct:.2f}% / {trend})")
         lines.append("--------------------")
 
-    # 2. 監視銘柄の状況＆AI精密判断
-    lines.append("📈【監視銘柄の精密テクニカル & AI分析】")
+    # 2. 監視銘柄の状況（4行構成）
+    lines.append("📈【あなたの注目銘柄】")
     for res in watchlist_results:
         symbol = res["symbol"]
         name = res["name"]
@@ -51,57 +53,30 @@ def format_line_report(watchlist_results, ipo_list, market_indices=None, perform
         curr = res["currency"]
         change = res["change"]
         pct = res["pct_change"]
-        status = res.get("market_status", "")
-        tech = res.get("tech") or {}
         ai = res.get("ai", {})
 
         icon = "🔺" if pct > 0 else "🔻" if pct < 0 else "➖"
-        total_score = ai.get("total_score", 50)
-        t_score = ai.get("tech_score", tech.get("tech_score", 25))
-        f_score = ai.get("fundamental_score", 25)
-        action = ai.get("action_label", "中立")
-        is_favorable = ai.get("is_favorable", True)
+        sign = "+" if change > 0 else ""
 
-        badge = " 🔥[注目好機]" if (total_score >= 68 and is_favorable) else " 🚫[見送り推奨]" if not is_favorable else ""
+        # 結論ラベル（買うべきか待つべきか）
+        advice = ai.get("simple_advice", "様子見")
+        advice_badge = " 🔥【今すぐ買い候補】" if "買い" in advice and "見送り" not in advice else " ⏸️【今は待つべき】"
 
-        lines.append(f"\n{icon} {name} ({symbol}){badge}")
-        lines.append(f"・ステータス: {status}")
-        lines.append(f"・株価: {price:,} {curr} (前日終値: {prev:,} / {change:+}, {pct:+.2f}%)")
-        
-        if tech:
-            lines.append(f"・📊テクニカル指標: RSI={tech.get('rsi_14')} | 25日乖離={tech.get('bias25'):+.1f}% | ATR={tech.get('atr')} {curr}")
-
-        lines.append(f"・💡AI総合評価スコア: 【{total_score}点 / 100点】 ({action})")
-        lines.append(f"   [内訳: テクニカル客観点 {t_score}/50点 ＋ ファンダ/地合い点 {f_score}/50点]")
-        lines.append(f"・🔍分析根拠: {ai.get('reason', '')}")
-        lines.append(f"・🎯売買戦略 & リスクリワード:")
-        lines.append(f"   ▶ 執行方針: {ai.get('order_type', '指値待機')}")
-        lines.append(f"   ▶ 利確目標株価: {ai.get('target_price', '未定')}")
-        lines.append(f"   ▶ 撤退損切りライン: {ai.get('stop_loss', '未定')}")
-        lines.append(f"   ▶ リスクリワード比: {ai.get('reward_risk', '1.5:1')}")
-        lines.append(f"・⚠️戦略＆リスク: {ai.get('strategy_detail', '')}")
+        lines.append(f"\n{icon} {name} ({symbol}){advice_badge}")
+        lines.append(f"① 今の株価: {price:,} {curr}")
+        lines.append(f"② どのくらい動いた？: {sign}{change:,} {curr} ({sign}{pct:.2f}%)")
+        lines.append(f"③ 原因は？: {ai.get('simple_reason', '目立った突発材料はなく市場全体に連動した動きです。')}")
+        lines.append(f"④ 買うべき？待つべき？:\n   👉 {advice}")
         lines.append("--------------------")
 
-    # 3. AI予測の実績検証・通算成績
-    if performance and performance.get("total_count", 0) > 0:
-        lines.append("\n🏆【AI推奨の通算実績・勝率検証】")
-        lines.append(f"・過去記録数: {performance['total_count']}件 (判定完了: {performance['closed_count']}件 / 追跡中: {performance['tracking_count']}件)")
-        if performance['closed_count'] > 0:
-            lines.append(f"・通算勝率: {performance['win_rate']}% ({performance['win_count']}勝 {performance['loss_count']}敗)")
-            lines.append(f"・平均利益: +{performance['avg_profit']}% / 平均損失: {performance['avg_loss']}%")
-        else:
-            lines.append("・判定状況: 過去推奨銘柄の目標・損切り到達をリアルタイム追跡中")
-        lines.append("--------------------")
-
-    # 4. 重複排除済み・本物のIPO速報
+    # 3. 新規上場(IPO)情報
     if ipo_list:
-        lines.append("\n🚀【最新IPO・新規上場速報】")
-        for ipo in ipo_list:
+        lines.append("\n🚀【新規上場(IPO)ニュース】")
+        for ipo in ipo_list[:2]:
             lines.append(f"・{ipo['title']}")
-            lines.append(f"  (出典: {ipo.get('source','公式発表')} / {ipo.get('date','本日')})")
         lines.append("--------------------")
 
-    lines.append("\n※AI及びテクニカル指標による参考情報です。投資判断は自己責任で行ってください。")
+    lines.append("\n※AIの参考情報です。投資判断はご自身の責任で行ってください。")
     return "\n".join(lines)
 
 def split_message_if_needed(text: str, max_chars=4000):

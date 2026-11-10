@@ -1,0 +1,38 @@
+[
+  {
+    "symbol": "SPCX",
+    "name": "Space Exploration Technologies (SpaceX)",
+    "market": "US",
+    "category": "注目"
+  },
+  {
+    "symbol": "NVDA",
+    "name": "NVIDIA",
+    "market": "US",
+    "category": "注目"
+  },
+  {
+    "symbol": "AAPL",
+    "name": "Apple",
+    "market": "US",
+    "category": "注目"
+  },
+  {
+    "symbol": "INTC",
+    "name": "Intel (インテル)",
+    "market": "US",
+    "category": "注目"
+  },
+  {
+    "symbol": "9432.T",
+    "name": "NTT",
+    "market": "JP",
+    "category": "注目"
+  },
+  {
+    "symbol": "7203.T",
+    "name": "トヨタ自動車",
+    "market": "JP",
+    "category": "注目"
+  }
+]

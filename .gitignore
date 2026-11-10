@@ -1,0 +1,10 @@
+# プライベートなAPIキー・トークン設定
+config.json
+
+# Pythonキャッシュ
+__pycache__/
+*.pyc
+
+# 仮想環境
+venv/
+.env
